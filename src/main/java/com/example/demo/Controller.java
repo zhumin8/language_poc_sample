@@ -5,6 +5,7 @@ import com.google.cloud.language.v1.Document.Type;
 import com.google.cloud.language.v1.Entity;
 import com.google.cloud.language.v1.LanguageServiceClient;
 import com.google.cloud.language.v1.Sentiment;
+import com.sample.autoconfig.LanguageTemplate;
 import java.io.IOException;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
