@@ -47,7 +47,7 @@
 
     <dependency>
       <groupId>com.sample</groupId>
-      <artifactId>autoconfig</artifactId>
+      <artifactId>cloud-language</artifactId>
       <version>0.0.1-SNAPSHOT</version>
     </dependency>
 
