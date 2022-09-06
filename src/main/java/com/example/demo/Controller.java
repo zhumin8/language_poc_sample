@@ -69,87 +69,55 @@ public class Controller {
   @GetMapping("/autoconfig")
   void withAutoConfigClient() {
 
-    for (String text : this.texts) {
-      Document doc = Document.newBuilder().setContent(text).setType(Type.PLAIN_TEXT).build();
-      // Detects the sentiment of the text
-       Sentiment sentiment = this.autoClient.analyzeSentiment(doc).getDocumentSentiment();
-       // for (int i = 0; i < 20 ; i++) {
-       //  this.autoClient.analyzeSentiment(doc).getDocumentSentiment();
-       //   }
-      LOGGER.info(String.format("Text: \"%s\"%n", text));
-       LOGGER.info(String.format(
-          "Sentiment: score = %s, magnitude = %s%n",
-          sentiment.getScore(), sentiment.getMagnitude()));
-
-      List<Entity> entities = this.autoClient.analyzeEntities(doc).getEntitiesList();
-       LOGGER.info("Analyze Entities: ");
-      entities.forEach(x -> LOGGER.info("Entity: " + x.getName() +
-          ", Salience: " + x.getSalience() +
-          ", Sentiment: " + x.getSentiment() +
-          ", Mention counts: " + x.getMentionsCount()));
-    }
-     this.autoClient.close();
+    callService(this.autoClient);
   }
 
-  @Value("${clientlib.credentials.location}")
-  private Resource location;
-
-  // @Value("${clientlib.quotaProjectId}")
-  // private String quotaProjectId;
   /**
    * Usage with client library directly.
    */
   @GetMapping("/nl")
   void languageClientLib() throws IOException {
 
-    Credentials credentials = new Credentials("https://www.googleapis.com/auth/cloud-language");
-    credentials.setLocation(location);
+    ExecutorProvider executorProvider =
+        LanguageServiceSettings.defaultExecutorProviderBuilder()
+            .setExecutorThreadCount(10)
+            .build();
 
-    FixedCredentialsProvider fixedCredentialsProvider = FixedCredentialsProvider.create(
-        GoogleCredentials.fromStream(credentials.getLocation().getInputStream())
-            .createScoped(credentials.getScopes()));
+    // add some retry settings here.
 
     LanguageServiceSettings clientSettings =
         LanguageServiceSettings.newBuilder()
-            .setCredentialsProvider(fixedCredentialsProvider)
-            // .setQuotaProjectId()
-            // .setTransportChannelProvider(transportChannelProvider)
-            // .setHeaderProvider(new UserAgentHeaderProvider(this.getClass())) // change header
+            .setQuotaProjectId("mzhu-test3")
+            .setBackgroundExecutorProvider(executorProvider)
             .build();
     // Instantiates a client
-    // LanguageServiceClient language = LanguageServiceClient.create();
     LanguageServiceClient language = LanguageServiceClient.create(clientSettings);
 
-    Map<String, List<String>> requestMetadata = language.getSettings().getCredentialsProvider().getCredentials().getRequestMetadata();
+    callService(language);
 
-    LOGGER.info("getSettings().getCredentialsProvider().getCredentials().getRequestMetadata();");
-    requestMetadata.forEach((x, y) -> {
-      LOGGER.info(x + ": " + y + "\n");
-    });
-    // System.out.println("PRINT OUT HEADERS IN HEADERPROVIDER: ");
-    // Map<String, String> headersMap = language.getSettings().getHeaderProvider().getHeaders();
-    // headersMap.forEach((key, val) -> {
-    //   System.out.println(key + ": " + val +";");
-    // });
+    language.close();
+  }
+
+  private void callService(LanguageServiceClient serviceClient) {
     for (String text : this.texts) {
       Document doc = Document.newBuilder().setContent(text).setType(Type.PLAIN_TEXT).build();
       // Detects the sentiment of the text
-      Sentiment sentiment = language.analyzeSentiment(doc).getDocumentSentiment();
-
-      System.out.printf("Text: \"%s\"%n", text);
-      System.out.printf(
+      Sentiment sentiment = serviceClient.analyzeSentiment(doc).getDocumentSentiment();
+      // for (int i = 0; i < 20 ; i++) {
+      //  this.autoClient.analyzeSentiment(doc).getDocumentSentiment();
+      //   }
+      LOGGER.info(String.format("Text: \"%s\"%n", text));
+      LOGGER.info(String.format(
           "Sentiment: score = %s, magnitude = %s%n",
-          sentiment.getScore(), sentiment.getMagnitude());
+          sentiment.getScore(), sentiment.getMagnitude()));
 
-      List<Entity> entities = language.analyzeEntities(doc).getEntitiesList();
-      System.out.println("Analyze Entities: ");
-      entities.forEach(x -> System.out.println("Entity: " + x.getName() +
+      List<Entity> entities = serviceClient.analyzeEntities(doc).getEntitiesList();
+      LOGGER.info("Analyze Entities: ");
+      entities.forEach(x -> LOGGER.info("Entity: " + x.getName() +
           ", Salience: " + x.getSalience() +
           ", Sentiment: " + x.getSentiment() +
           ", Mention counts: " + x.getMentionsCount()));
     }
-
-    language.close();
   }
 
   @GetMapping("env")
