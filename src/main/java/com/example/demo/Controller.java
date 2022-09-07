@@ -3,6 +3,7 @@ package com.example.demo;
 import com.google.api.gax.core.ExecutorProvider;
 import com.google.api.gax.core.FixedCredentialsProvider;
 import com.google.api.gax.core.InstantiatingExecutorProvider;
+import com.google.api.gax.retrying.RetrySettings;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.language.v1.Document;
 import com.google.cloud.language.v1.Document.Type;
@@ -69,6 +70,8 @@ public class Controller {
   @GetMapping("/autoconfig")
   void withAutoConfigClient() {
 
+    LOGGER.info("Calling Client Library with Spring auto-configuration.");
+
     callService(this.autoClient);
   }
 
@@ -77,21 +80,32 @@ public class Controller {
    */
   @GetMapping("/nl")
   void languageClientLib() throws IOException {
+    LOGGER.info("Calling Client Library directly.");
+
+    // TODO: add use service account
 
     ExecutorProvider executorProvider =
         LanguageServiceSettings.defaultExecutorProviderBuilder()
             .setExecutorThreadCount(10)
             .build();
 
-    // add some retry settings here.
-
-    LanguageServiceSettings clientSettings =
+    // set quota-project-id and executor-thread-count
+    LanguageServiceSettings.Builder clientSettingsBuilder =
         LanguageServiceSettings.newBuilder()
             .setQuotaProjectId("mzhu-test3")
-            .setBackgroundExecutorProvider(executorProvider)
-            .build();
+            .setBackgroundExecutorProvider(executorProvider);
+    // add some retry settings here.
+    RetrySettings retrySettings = clientSettingsBuilder
+        .analyzeSentimentSettings()
+        .getRetrySettings();
+    retrySettings
+        .toBuilder()
+        .setRetryDelayMultiplier(3.0);
+    clientSettingsBuilder
+        .analyzeSentimentSettings()
+        .setRetrySettings(retrySettings);
     // Instantiates a client
-    LanguageServiceClient language = LanguageServiceClient.create(clientSettings);
+    LanguageServiceClient language = LanguageServiceClient.create(clientSettingsBuilder.build());
 
     callService(language);
 
